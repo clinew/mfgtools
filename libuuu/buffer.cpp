@@ -41,6 +41,8 @@
 #include <string.h>
 #include "bzlib.h"
 #include "stdio.h"
+#include <errno.h>
+#include <string.h>
 
 #ifdef _MSC_VER
 #define stat64 _stat64
@@ -315,8 +317,10 @@ public:
 		}
 
 		string err;
-		err = "fail open file: ";
+		err = "fail open file '";
 		err += filename;
+		err += "': ";
+		err += strerror(errno);
 		set_last_err_string(err);
 		return -1;
 	}
