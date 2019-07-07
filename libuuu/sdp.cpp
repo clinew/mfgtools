@@ -29,6 +29,8 @@
 *
 */
 
+#define _LARGE_FILE64_SOURCE
+
 #include <string>
 #include "sdps.h"
 #include "hidreport.h"

@@ -31,6 +31,8 @@
 
 #pragma once
 
+#define _FILE_OFFSET_BITS 64
+
 #include "cmd.h"
 #include "trans.h"
 #include "hidreport.h"
@@ -122,7 +124,7 @@ public:
 		status = *(uint32_t*)(m_input.data() + 1);
 		return 0;
 	};
-	IvtHeader * search_ivt_header(shared_ptr<FileBuffer> data, size_t &off, size_t limit=ULLONG_MAX);
+	IvtHeader * search_ivt_header(shared_ptr<FileBuffer> data, size_t &off, size_t limit=SIZE_MAX);
 
 	HAB_t get_hab_type(HIDReport *report)
 	{

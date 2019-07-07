@@ -31,6 +31,8 @@
 
 #pragma once
 
+#define _FILE_OFFSET_BITS 64
+
 #include <vector>
 #include <memory>
 #include "liberror.h"
@@ -39,6 +41,7 @@
 #include <atomic>
 #include <thread>
 #include <string>
+#include <errno.h>
 
 #ifdef _MSC_VER
 #include <Windows.h>
@@ -62,6 +65,7 @@ int file_overwrite_monitor(string filename, FileBuffer *p);
 class FileBuffer
 {
 public:
+	string path;
 	vector<uint8_t> m_data;
 	uint8_t *m_pMapbuffer;
 	size_t m_MapSize;
@@ -184,7 +188,7 @@ public:
 		m_MapSize = sz;
 		
 #else
-		int fd = open(filename.c_str(), O_RDONLY);
+		int fd = open(filename.c_str(), O_RDONLY | O_LARGEFILE);
 		if (fd == -1)
 		{
 			string err;
@@ -196,6 +200,13 @@ public:
 
 		m_pMapbuffer = (uint8_t *)mmap64(0, sz, PROT_READ, MAP_SHARED, fd, 0);
 		if (m_pMapbuffer == MAP_FAILED) {
+			if (errno == ENOMEM) {
+				// 32-bit hack.
+				m_MapSize = sz;
+				path = filename;
+				close(fd);
+				return 0;
+			}
 			m_pMapbuffer = NULL;
 			set_last_err_string("mmap failure\n");
 			return -1;

@@ -454,9 +454,35 @@ int FBFlashCmd::flash_raw2sparse(FastBoot *fb, shared_ptr<FileBuffer> pdata, siz
 	nt.total = pdata->size();
 	call_notify(nt);
 
+	// 32-bit hack.
+	int fd = 0;
+	if (pdata->m_pMapbuffer == MAP_FAILED) {
+		fd = open(pdata->path.c_str(), O_RDONLY | O_LARGEFILE);
+		if (fd == -1) {
+			fprintf(stderr, "Unable to open '%s': %s", pdata->path.c_str(), strerror(errno));
+			return -1;
+		}
+	}
+
 	for (size_t i = 0; i < pdata->size(); i += block_size)
 	{
-		int ret = sf.push_one_block(pdata->data() + i);
+		int ret;
+		void* buff;
+		if (pdata->m_pMapbuffer == MAP_FAILED) {
+			// 32-bit hack.
+			buff = malloc(block_size);
+			if (!buff) {
+				fprintf(stderr, "Unable to allocate block");
+				return -1;
+			}
+			if (read(fd, buff, block_size) == -1) {
+				fprintf(stderr, "Read failed: %s", strerror(errno));
+				return -1;
+			}
+			ret = sf.push_one_block(buff);
+		} else {
+			ret = sf.push_one_block(pdata->data() + i);
+		}
 		if (ret)
 		{
 			if (flash(fb, sf.m_data.data(), sf.m_data.size()))
@@ -475,6 +501,17 @@ int FBFlashCmd::flash_raw2sparse(FastBoot *fb, shared_ptr<FileBuffer> pdata, siz
 			nt.type = uuu_notify::NOTIFY_TRANS_POS;
 			nt.total = i;
 			call_notify(nt);
+		}
+		// 32-bit hack.
+		if (pdata->m_pMapbuffer == MAP_FAILED) {
+			free(buff);
+		}
+	}
+
+	// 32-bit hack.
+	if (pdata->m_pMapbuffer == MAP_FAILED) {
+		if (close(fd) == -1) {
+			fprintf(stderr, "Unable to close file buffer: %s", strerror(errno));
 		}
 	}
 

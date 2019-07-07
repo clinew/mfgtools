@@ -29,6 +29,8 @@
 *
 */
 
+#define _FILE_OFFSET_BITS 64
+
 #include <memory>
 #include <string.h>
 #include "cmd.h"
